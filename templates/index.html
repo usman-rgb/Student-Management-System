@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block meta_desc %}Student Management System - Dashboard for managing student records, grades, and performance.{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('add_student') }}" class="btn btn-primary btn-sm">
+    <i class="fas fa-plus"></i> New Student
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- Dashboard Stats Cards -->
+<section class="dashboard-grid">
+    <div class="stat-card stat-total">
+        <div class="stat-icon"><i class="fas fa-users"></i></div>
+        <div class="stat-info">
+            <h3 class="counter" data-target="{{ total }}">{{ total }}</h3>
+            <p>Total Students</p>
+        </div>
+        <div class="stat-wave"></div>
+    </div>
+    <div class="stat-card stat-avg">
+        <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+        <div class="stat-info">
+            <h3>{{ avg_marks }}%</h3>
+            <p>Average Marks</p>
+        </div>
+        <div class="stat-wave"></div>
+    </div>
+    <div class="stat-card stat-pass">
+        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-info">
+            <h3>{{ pass_count }}</h3>
+            <p>Passed</p>
+        </div>
+        <div class="stat-wave"></div>
+    </div>
+    <div class="stat-card stat-fail">
+        <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+        <div class="stat-info">
+            <h3>{{ fail_count }}</h3>
+            <p>Failed</p>
+        </div>
+        <div class="stat-wave"></div>
+    </div>
+</section>
+
+{% if total > 0 %}
+<section class="charts-row">
+    <div class="chart-card">
+        <h3 class="chart-title"><i class="fas fa-chart-pie"></i> Grade Distribution</h3>
+        <div class="chart-wrapper"><canvas id="gradeChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+        <h3 class="chart-title"><i class="fas fa-chart-bar"></i> Subject Averages</h3>
+        <div class="chart-wrapper"><canvas id="subjectChart"></canvas></div>
+    </div>
+</section>
+{% endif %}
+
+{% if top_student %}
+<section class="top-student-card">
+    <div class="top-student-badge"><i class="fas fa-trophy"></i></div>
+    <div class="top-student-info">
+        <h2>🏆 Top Performer</h2>
+        <div class="top-student-details">
+            <div class="detail-item"><i class="fas fa-user"></i><span><strong>{{ top_student.name }}</strong></span></div>
+            <div class="detail-item"><i class="fas fa-id-badge"></i><span>Roll: {{ top_student.roll_no }}</span></div>
+            <div class="detail-item"><i class="fas fa-percentage"></i><span>Average: {{ top_student.average }}%</span></div>
+            <div class="detail-item"><i class="fas fa-award"></i><span class="grade-badge {{ top_student.grade_color }}">Grade: {{ top_student.grade }}</span></div>
+            <a href="{{ url_for('student_profile', student_id=top_student.id) }}" class="btn btn-sm btn-outline" style="margin-left:8px;"><i class="fas fa-eye"></i> View Profile</a>
+        </div>
+    </div>
+</section>
+
+{% if recent_students %}
+<section class="recent-section">
+    <h2 class="section-title"><i class="fas fa-clock"></i> Recently Added</h2>
+    <div class="recent-grid">
+        {% for student in recent_students %}
+        <a href="{{ url_for('student_profile', student_id=student.id) }}" class="recent-card">
+            {% if student.photo %}
+            <img src="{{ url_for('static', filename='uploads/' + student.photo) }}" class="recent-photo" alt="{{ student.name }}">
+            {% else %}
+            <div class="recent-avatar">{{ student.name[0] | upper }}</div>
+            {% endif %}
+            <div class="recent-info">
+                <strong>{{ student.name }}</strong>
+                <span>{{ student.roll_no }} • {{ student.average }}%</span>
+            </div>
+            <span class="grade-badge {{ student.grade_color }}">{{ student.grade }}</span>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% else %}
+<section class="empty-state">
+    <div class="empty-icon"><i class="fas fa-user-graduate"></i></div>
+    <h2>No Students Yet</h2>
+    <p>No students have been added yet. Click the button below to add your first student.</p>
+    <a href="{{ url_for('add_student') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add First Student</a>
+</section>
+{% endif %}
+
+<section class="quick-actions">
+    <h2 class="section-title">Quick Actions</h2>
+    <div class="actions-grid">
+        <a href="{{ url_for('add_student') }}" class="action-card">
+            <div class="action-icon action-add"><i class="fas fa-user-plus"></i></div>
+            <h3>Add Student</h3><p>Register a new student</p>
+        </a>
+        <a href="{{ url_for('view_students') }}" class="action-card">
+            <div class="action-icon action-view"><i class="fas fa-list"></i></div>
+            <h3>View All</h3><p>View all students</p>
+        </a>
+        <a href="{{ url_for('attendance') }}" class="action-card">
+            <div class="action-icon action-attendance"><i class="fas fa-calendar-check"></i></div>
+            <h3>Attendance</h3><p>Mark daily attendance</p>
+        </a>
+        <a href="{{ url_for('analytics') }}" class="action-card">
+            <div class="action-icon action-analytics"><i class="fas fa-chart-bar"></i></div>
+            <h3>Analytics</h3><p>Reports & statistics</p>
+        </a>
+        <a href="{{ url_for('export_csv') }}" class="action-card">
+            <div class="action-icon action-export"><i class="fas fa-file-csv"></i></div>
+            <h3>Export CSV</h3><p>Download student data</p>
+        </a>
+        <a href="{{ url_for('settings') }}" class="action-card">
+            <div class="action-icon action-settings"><i class="fas fa-cog"></i></div>
+            <h3>Settings</h3><p>Manage subjects</p>
+        </a>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+{% if total > 0 %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/api/grade-distribution').then(r => r.json()).then(data => {
+        new Chart(document.getElementById('gradeChart').getContext('2d'), {
+            type: 'doughnut',
+            data: { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#00d4aa','#2ecc71','#3498db','#9b59b6','#f39c12','#e67e22','#e74c3c'], borderWidth: 0, hoverOffset: 8 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { color: '#a0a0c0', padding: 16, font: { family: 'Inter', size: 12 } } } } }
+        });
+    });
+    fetch('/api/subject-averages').then(r => r.json()).then(data => {
+        const colors = ['rgba(108,99,255,0.7)','rgba(0,212,170,0.7)','rgba(255,107,107,0.7)','rgba(254,202,87,0.7)','rgba(52,152,219,0.7)','rgba(155,89,182,0.7)','rgba(243,156,18,0.7)','rgba(46,204,113,0.7)'];
+        new Chart(document.getElementById('subjectChart').getContext('2d'), {
+            type: 'bar',
+            data: { labels: Object.keys(data), datasets: [{ label: 'Average Marks', data: Object.values(data), backgroundColor: colors.slice(0, Object.keys(data).length), borderRadius: 8, borderSkipped: false }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#a0a0c0' } }, x: { grid: { display: false }, ticks: { color: '#a0a0c0' } } }, plugins: { legend: { display: false } } }
+        });
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

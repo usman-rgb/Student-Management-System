@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block meta_desc %}Manage subjects and system settings.{% endblock %}
+{% block page_title %}Settings{% endblock %}
+
+{% block content %}
+<section class="form-container">
+    <!-- Current Subjects -->
+    <div class="form-section">
+        <h2 class="form-section-title"><i class="fas fa-book"></i> Current Subjects ({{ subjects|length }})</h2>
+        <div class="settings-subject-list">
+            {% for subj in subjects %}
+            <div class="settings-subject-item">
+                <div class="settings-subject-info">
+                    <div class="settings-subject-icon"><i class="fas {{ subj.icon }}"></i></div>
+                    <div>
+                        <strong>{{ subj.name }}</strong>
+                        <small>Key: {{ subj.key }}</small>
+                    </div>
+                </div>
+                {% if subjects|length > 1 %}
+                <form action="{{ url_for('settings') }}" method="POST" style="display:inline;">
+                    <input type="hidden" name="action" value="delete_subject">
+                    <input type="hidden" name="subject_key" value="{{ subj.key }}">
+                    <button type="submit" class="btn-icon btn-delete" title="Remove subject"
+                            onclick="return confirm('Are you sure you want to remove &quot;{{ subj.name }}&quot;? This will remove it from all students.')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Add New Subject -->
+    <div class="form-section">
+        <h2 class="form-section-title"><i class="fas fa-plus-circle"></i> Add New Subject</h2>
+        <form action="{{ url_for('settings') }}" method="POST" class="add-subject-form">
+            <input type="hidden" name="action" value="add_subject">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="subject_name"><i class="fas fa-book"></i> Subject Name <span class="required">*</span></label>
+                    <input type="text" id="subject_name" name="subject_name" placeholder="e.g. Physics" required>
+                </div>
+                <div class="form-group">
+                    <label for="subject_icon"><i class="fas fa-icons"></i> Icon Class</label>
+                    <select id="subject_icon" name="subject_icon">
+                        <option value="fa-book">📖 Book (fa-book)</option>
+                        <option value="fa-flask">🧪 Flask (fa-flask)</option>
+                        <option value="fa-calculator">🧮 Calculator (fa-calculator)</option>
+                        <option value="fa-laptop-code">💻 Computer (fa-laptop-code)</option>
+                        <option value="fa-language">🌐 Language (fa-language)</option>
+                        <option value="fa-pen-fancy">✒️ Pen (fa-pen-fancy)</option>
+                        <option value="fa-atom">⚛️ Atom (fa-atom)</option>
+                        <option value="fa-dna">🧬 DNA (fa-dna)</option>
+                        <option value="fa-globe">🌍 Globe (fa-globe)</option>
+                        <option value="fa-palette">🎨 Art (fa-palette)</option>
+                        <option value="fa-music">🎵 Music (fa-music)</option>
+                        <option value="fa-running">🏃 Sports (fa-running)</option>
+                        <option value="fa-history">📜 History (fa-history)</option>
+                        <option value="fa-brain">🧠 Brain (fa-brain)</option>
+                        <option value="fa-chart-line">📈 Economics (fa-chart-line)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-actions" style="margin-top:16px;">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Add Subject</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- CSV Import Info -->
+    <div class="form-section">
+        <h2 class="form-section-title"><i class="fas fa-file-csv"></i> CSV Import / Export</h2>
+        <div class="settings-info-card">
+            <h3><i class="fas fa-download"></i> Export</h3>
+            <p>Download all student data as a CSV file for backup or analysis in Excel.</p>
+            <a href="{{ url_for('export_csv') }}" class="btn btn-outline btn-sm"><i class="fas fa-download"></i> Export CSV</a>
+        </div>
+        <div class="settings-info-card" style="margin-top:16px;">
+            <h3><i class="fas fa-upload"></i> Import</h3>
+            <p>Upload a CSV file to bulk-add students. The CSV must have the following columns:</p>
+            <div class="csv-columns">
+                <code>Name, Roll No, Email, Phone, Gender, Course, Address{% for subj in subjects %}, {{ subj.name }}{% endfor %}</code>
+            </div>
+            <form action="{{ url_for('import_csv') }}" method="POST" enctype="multipart/form-data" style="margin-top:12px;">
+                <label for="settings_csv" class="btn btn-outline btn-sm" style="cursor:pointer;"><i class="fas fa-upload"></i> Choose CSV File</label>
+                <input type="file" id="settings_csv" name="csv_file" accept=".csv" style="display:none;" onchange="this.form.submit()">
+            </form>
+        </div>
+    </div>
+
+    <!-- System Info -->
+    <div class="form-section">
+        <h2 class="form-section-title"><i class="fas fa-info-circle"></i> System Information</h2>
+        <div class="settings-info-grid">
+            <div class="settings-info-item">
+                <i class="fas fa-server"></i>
+                <div><label>Storage</label><p>In-Memory (data resets on restart)</p></div>
+            </div>
+            <div class="settings-info-item">
+                <i class="fas fa-photo-video"></i>
+                <div><label>Photo Upload</label><p>Max 2MB • JPG, PNG, GIF</p></div>
+            </div>
+            <div class="settings-info-item">
+                <i class="fas fa-list-ol"></i>
+                <div><label>Pagination</label><p>10 students per page</p></div>
+            </div>
+            <div class="settings-info-item">
+                <i class="fas fa-code-branch"></i>
+                <div><label>Version</label><p>SMS v2.0</p></div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

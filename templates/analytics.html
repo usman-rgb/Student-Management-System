@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Analytics{% endblock %}
+{% block meta_desc %}Analytics and reports for the Student Management System.{% endblock %}
+{% block page_title %}Analytics & Reports{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('view_students') }}" class="btn btn-outline btn-sm"><i class="fas fa-users"></i> All Students</a>
+{% endblock %}
+
+{% block content %}
+{% if total == 0 %}
+<section class="empty-state">
+    <div class="empty-icon"><i class="fas fa-chart-bar"></i></div>
+    <h2>No Data Available</h2>
+    <p>Analytics will be available after students are added. Add students first to see reports.</p>
+    <a href="{{ url_for('add_student') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Student</a>
+</section>
+{% else %}
+
+<section class="analytics-overview">
+    <div class="analytics-stat"><div class="analytics-stat-icon" style="background:var(--stat-total);"><i class="fas fa-users"></i></div><div><h3>{{ stats.total }}</h3><p>Total Students</p></div></div>
+    <div class="analytics-stat"><div class="analytics-stat-icon" style="background:var(--stat-avg);"><i class="fas fa-chart-line"></i></div><div><h3>{{ stats.class_avg }}%</h3><p>Class Average</p></div></div>
+    <div class="analytics-stat"><div class="analytics-stat-icon" style="background:var(--stat-pass);"><i class="fas fa-check"></i></div><div><h3>{{ stats.pass_rate }}%</h3><p>Pass Rate</p></div></div>
+    <div class="analytics-stat"><div class="analytics-stat-icon" style="background:linear-gradient(135deg,#3498db,#2980b9);"><i class="fas fa-arrow-up"></i></div><div><h3>{{ stats.highest }}%</h3><p>Highest Score</p></div></div>
+    <div class="analytics-stat"><div class="analytics-stat-icon" style="background:var(--stat-fail);"><i class="fas fa-arrow-down"></i></div><div><h3>{{ stats.lowest }}%</h3><p>Lowest Score</p></div></div>
+</section>
+
+<section class="charts-row">
+    <div class="chart-card"><h3 class="chart-title"><i class="fas fa-chart-pie"></i> Grade Distribution</h3><div class="chart-wrapper"><canvas id="gradePieChart"></canvas></div></div>
+    <div class="chart-card"><h3 class="chart-title"><i class="fas fa-chart-bar"></i> Subject-wise Averages</h3><div class="chart-wrapper"><canvas id="subjectBarChart"></canvas></div></div>
+</section>
+
+<section class="analytics-section">
+    <h2 class="section-title"><i class="fas fa-clipboard-list"></i> Subject-wise Statistics</h2>
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead><tr><th>Subject</th><th>Average</th><th>Highest</th><th>Lowest</th><th>Performance</th></tr></thead>
+            <tbody>
+                {% for subj in subjects %}
+                {% if subj.key in subject_stats %}
+                {% set data = subject_stats[subj.key] %}
+                <tr class="table-row-animate">
+                    <td><strong><i class="fas {{ subj.icon }}"></i> {{ subj.name }}</strong></td>
+                    <td><strong>{{ data.avg }}%</strong></td>
+                    <td><span style="color:var(--grade-a);">{{ data.highest }}</span></td>
+                    <td><span style="color:var(--grade-f);">{{ data.lowest }}</span></td>
+                    <td><div class="progress-bar-wrapper"><div class="progress-bar {% if data.avg >= 80 %}progress-excellent{% elif data.avg >= 60 %}progress-good{% elif data.avg >= 40 %}progress-average{% else %}progress-poor{% endif %}" style="width:{{ data.avg }}%"></div></div></td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="analytics-section">
+    <h2 class="section-title"><i class="fas fa-chart-pie"></i> Grade Breakdown</h2>
+    <div class="grade-cards-grid">
+        {% for grade, count in grade_dist.items() %}
+        <div class="grade-card">
+            <span class="grade-badge grade-{{ grade|lower|replace('+','plus') }}">{{ grade }}</span>
+            <h3>{{ count }}</h3>
+            <p>{{ (count / total * 100) | round(1) }}%</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<div class="performers-grid">
+    <section class="analytics-section">
+        <h2 class="section-title"><i class="fas fa-trophy" style="color:#feca57;"></i> Top 5 Performers</h2>
+        <div class="performer-list">
+            {% for s in top_performers %}
+            <a href="{{ url_for('student_profile', student_id=s.id) }}" class="performer-item">
+                <span class="performer-rank">{{ loop.index }}</span>
+                {% if s.photo %}<img src="{{ url_for('static', filename='uploads/' + s.photo) }}" class="table-photo" alt="">
+                {% else %}<div class="avatar">{{ s.name[0] | upper }}</div>{% endif %}
+                <div class="performer-info"><strong>{{ s.name }}</strong><small>{{ s.roll_no }} • {{ s.course or 'N/A' }}</small></div>
+                <div class="performer-score"><strong>{{ s.average }}%</strong><span class="grade-badge {{ s.grade_color }}">{{ s.grade }}</span></div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    <section class="analytics-section">
+        <h2 class="section-title"><i class="fas fa-exclamation-triangle" style="color:#e74c3c;"></i> Need Improvement</h2>
+        <div class="performer-list">
+            {% for s in bottom_performers %}
+            <a href="{{ url_for('student_profile', student_id=s.id) }}" class="performer-item">
+                <span class="performer-rank performer-rank-low">{{ loop.index }}</span>
+                {% if s.photo %}<img src="{{ url_for('static', filename='uploads/' + s.photo) }}" class="table-photo" alt="">
+                {% else %}<div class="avatar">{{ s.name[0] | upper }}</div>{% endif %}
+                <div class="performer-info"><strong>{{ s.name }}</strong><small>{{ s.roll_no }} • {{ s.course or 'N/A' }}</small></div>
+                <div class="performer-score"><strong>{{ s.average }}%</strong><span class="grade-badge {{ s.grade_color }}">{{ s.grade }}</span></div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+
+{% if courses_data %}
+<section class="analytics-section">
+    <h2 class="section-title"><i class="fas fa-book"></i> Course-wise Breakdown</h2>
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead><tr><th>Course</th><th>Students</th><th>Average</th><th>Performance</th></tr></thead>
+            <tbody>
+                {% for course, data in courses_data.items() %}
+                <tr class="table-row-animate">
+                    <td><strong><i class="fas fa-book"></i> {{ course }}</strong></td>
+                    <td>{{ data.count }}</td>
+                    <td><strong>{{ data.avg }}%</strong></td>
+                    <td><div class="progress-bar-wrapper"><div class="progress-bar {% if data.avg >= 80 %}progress-excellent{% elif data.avg >= 60 %}progress-good{% elif data.avg >= 40 %}progress-average{% else %}progress-poor{% endif %}" style="width:{{ data.avg }}%"></div></div></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if total > 0 %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const gradeData = {{ grade_dist | tojson }};
+    new Chart(document.getElementById('gradePieChart').getContext('2d'), {
+        type: 'doughnut', data: { labels: Object.keys(gradeData), datasets: [{ data: Object.values(gradeData), backgroundColor: ['#00d4aa','#2ecc71','#3498db','#9b59b6','#f39c12','#e67e22','#e74c3c'], borderWidth: 0, hoverOffset: 8 }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { color: '#a0a0c0', padding: 16, font: { family: 'Inter', size: 12 } } } } }
+    });
+    const subjectData = {{ subject_avg | tojson }};
+    const colors = ['rgba(108,99,255,0.7)','rgba(0,212,170,0.7)','rgba(255,107,107,0.7)','rgba(254,202,87,0.7)','rgba(52,152,219,0.7)','rgba(155,89,182,0.7)','rgba(243,156,18,0.7)','rgba(46,204,113,0.7)'];
+    const subjectLabels = Object.keys(subjectData).map(k => k.charAt(0).toUpperCase() + k.slice(1));
+    new Chart(document.getElementById('subjectBarChart').getContext('2d'), {
+        type: 'bar', data: { labels: subjectLabels, datasets: [{ label: 'Average', data: Object.values(subjectData), backgroundColor: colors.slice(0, subjectLabels.length), borderRadius: 8, borderSkipped: false }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#a0a0c0' } }, x: { grid: { display: false }, ticks: { color: '#a0a0c0' } } }, plugins: { legend: { display: false } } }
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Search{% endblock %}
+{% block meta_desc %}Search for students in the Student Management System.{% endblock %}
+{% block page_title %}Search Students{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('view_students') }}" class="btn btn-outline btn-sm"><i class="fas fa-list"></i> View All</a>
+{% endblock %}
+
+{% block content %}
+<section class="search-container">
+    <form action="{{ url_for('search_student') }}" method="POST" class="search-form" id="searchForm">
+        <div class="search-input-wrapper">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" name="query" id="searchQuery" placeholder="Search by name, roll number, course, or email..." value="{{ query }}" autofocus>
+            <button type="submit" class="btn btn-primary search-btn"><i class="fas fa-search"></i> Search</button>
+        </div>
+    </form>
+</section>
+
+<section class="table-container">
+    {% if query %}
+        {% if results|length > 0 %}
+        <div class="table-header"><p class="table-count"><i class="fas fa-check-circle"></i> <strong>{{ results|length }}</strong> result(s) found for "<strong>{{ query }}</strong>"</p></div>
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead><tr><th>#</th><th>Student</th><th>Roll No</th><th>Course</th><th>Total</th><th>Average</th><th>Grade</th><th>Actions</th></tr></thead>
+                <tbody>
+                    {% for student in results %}
+                    <tr class="table-row-animate">
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            <a href="{{ url_for('student_profile', student_id=student.id) }}" class="student-name-cell" style="text-decoration:none;color:inherit;">
+                                {% if student.photo %}<img src="{{ url_for('static', filename='uploads/' + student.photo) }}" class="table-photo" alt="{{ student.name }}">
+                                {% else %}<div class="avatar">{{ student.name[0] | upper }}</div>{% endif %}
+                                <div><strong>{{ student.name }}</strong>{% if student.email %}<small class="email-small">{{ student.email }}</small>{% endif %}</div>
+                            </a>
+                        </td>
+                        <td><span class="badge badge-info">{{ student.roll_no }}</span></td>
+                        <td>{{ student.course or '—' }}</td>
+                        <td><strong>{{ student.total }}</strong></td>
+                        <td><strong>{{ student.average }}%</strong></td>
+                        <td><span class="grade-badge {{ student.grade_color }}">{{ student.grade }}</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{{ url_for('student_profile', student_id=student.id) }}" class="btn-icon btn-view" title="View"><i class="fas fa-eye"></i></a>
+                                <a href="{{ url_for('update_student', student_id=student.id) }}" class="btn-icon btn-edit" title="Edit"><i class="fas fa-pen"></i></a>
+                                <a href="{{ url_for('delete_student', student_id=student.id) }}" class="btn-icon btn-delete" title="Delete" onclick="return confirm('Are you sure you want to delete &quot;{{ student.name }}&quot;?')"><i class="fas fa-trash"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state"><div class="empty-icon"><i class="fas fa-search-minus"></i></div><h2>No Results Found</h2><p>No students matched "<strong>{{ query }}</strong>". Try a different keyword.</p></div>
+        {% endif %}
+    {% else %}
+    <div class="empty-state"><div class="empty-icon"><i class="fas fa-search"></i></div><h2>Search for Students</h2><p>Type a name, roll number, course, or email in the search box above.</p></div>
+    {% endif %}
+</section>
+{% endblock %}

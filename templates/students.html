@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}All Students{% endblock %}
+{% block meta_desc %}View all students in the Student Management System.{% endblock %}
+{% block page_title %}All Students{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('export_csv') }}" class="btn btn-outline btn-sm"><i class="fas fa-download"></i> Export CSV</a>
+<a href="{{ url_for('add_student') }}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Add New</a>
+{% endblock %}
+
+{% block content %}
+<!-- Filters & Sort Bar -->
+<section class="filter-bar">
+    <form action="{{ url_for('view_students') }}" method="GET" class="filter-form" id="filterForm">
+        <div class="filter-group">
+            <label><i class="fas fa-filter"></i> Grade:</label>
+            <select name="grade" onchange="this.form.submit()">
+                <option value="">All Grades</option>
+                {% for g in grades %}<option value="{{ g }}" {% if filter_grade == g %}selected{% endif %}>{{ g }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label><i class="fas fa-book"></i> Course:</label>
+            <select name="course" onchange="this.form.submit()">
+                <option value="">All Courses</option>
+                {% for c in courses %}<option value="{{ c }}" {% if filter_course == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label><i class="fas fa-sort"></i> Sort:</label>
+            <select name="sort" onchange="this.form.submit()">
+                <option value="id" {% if sort_by == 'id' %}selected{% endif %}>ID</option>
+                <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Name</option>
+                <option value="roll_no" {% if sort_by == 'roll_no' %}selected{% endif %}>Roll No</option>
+                <option value="average" {% if sort_by == 'average' %}selected{% endif %}>Average</option>
+                <option value="total" {% if sort_by == 'total' %}selected{% endif %}>Total</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label><i class="fas fa-arrow-down-wide-short"></i> Order:</label>
+            <select name="order" onchange="this.form.submit()">
+                <option value="asc" {% if order == 'asc' %}selected{% endif %}>Ascending</option>
+                <option value="desc" {% if order == 'desc' %}selected{% endif %}>Descending</option>
+            </select>
+        </div>
+        {% if filter_grade or filter_course %}
+        <a href="{{ url_for('view_students') }}" class="btn btn-outline btn-sm"><i class="fas fa-times"></i> Clear</a>
+        {% endif %}
+    </form>
+</section>
+
+<!-- Import CSV Section -->
+<section class="import-section">
+    <form action="{{ url_for('import_csv') }}" method="POST" enctype="multipart/form-data" class="import-form">
+        <label for="csv_file" class="btn btn-outline btn-sm" style="cursor:pointer;"><i class="fas fa-upload"></i> Import CSV</label>
+        <input type="file" id="csv_file" name="csv_file" accept=".csv" style="display:none;" onchange="this.form.submit()">
+    </form>
+</section>
+
+<!-- Students Table -->
+<section class="table-container">
+    {% if students|length > 0 %}
+    <div class="table-header">
+        <p class="table-count">
+            <i class="fas fa-users"></i> Showing: <strong>{{ students|length }}</strong>
+            {% if filter_grade or filter_course %} (filtered from {{ total_count }}){% endif %}
+            | Page {{ page }} of {{ total_pages }}
+        </p>
+    </div>
+    <div class="table-wrapper">
+        <table class="data-table" id="studentsTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Student</th>
+                    <th>Roll No</th>
+                    <th>Course</th>
+                    {% for subj in subjects %}
+                    <th>{{ subj.name[:4] }}</th>
+                    {% endfor %}
+                    <th>Total</th>
+                    <th>Average</th>
+                    <th>Grade</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr class="table-row-animate">
+                    <td>{{ (page - 1) * per_page + loop.index }}</td>
+                    <td>
+                        <a href="{{ url_for('student_profile', student_id=student.id) }}" class="student-name-cell" style="text-decoration:none;color:inherit;">
+                            {% if student.photo %}
+                            <img src="{{ url_for('static', filename='uploads/' + student.photo) }}" class="table-photo" alt="{{ student.name }}">
+                            {% else %}
+                            <div class="avatar">{{ student.name[0] | upper }}</div>
+                            {% endif %}
+                            <div>
+                                <strong>{{ student.name }}</strong>
+                                {% if student.email %}<small class="email-small">{{ student.email }}</small>{% endif %}
+                            </div>
+                        </a>
+                    </td>
+                    <td><span class="badge badge-info">{{ student.roll_no }}</span></td>
+                    <td>{{ student.course or '—' }}</td>
+                    {% for subj in subjects %}
+                    <td><span class="{% if student.marks.get(subj.key, 0) < 40 %}text-danger{% endif %}">{{ student.marks.get(subj.key, 0) }}</span></td>
+                    {% endfor %}
+                    <td><strong>{{ student.total }}</strong></td>
+                    <td><strong>{{ student.average }}%</strong></td>
+                    <td><span class="grade-badge {{ student.grade_color }}">{{ student.grade }}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{{ url_for('student_profile', student_id=student.id) }}" class="btn-icon btn-view" title="View"><i class="fas fa-eye"></i></a>
+                            <a href="{{ url_for('update_student', student_id=student.id) }}" class="btn-icon btn-edit" title="Edit"><i class="fas fa-pen"></i></a>
+                            <a href="{{ url_for('delete_student', student_id=student.id) }}" class="btn-icon btn-delete" title="Delete" onclick="return confirm('Are you sure you want to delete &quot;{{ student.name }}&quot;?')"><i class="fas fa-trash"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if total_pages > 1 %}
+    <div class="pagination">
+        {% if page > 1 %}
+        <a href="{{ url_for('view_students', page=page-1, sort=sort_by, order=order, grade=filter_grade, course=filter_course) }}" class="page-btn"><i class="fas fa-chevron-left"></i> Previous</a>
+        {% endif %}
+
+        {% for p in range(1, total_pages + 1) %}
+            {% if p == page %}
+            <span class="page-btn page-btn-active">{{ p }}</span>
+            {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+            <a href="{{ url_for('view_students', page=p, sort=sort_by, order=order, grade=filter_grade, course=filter_course) }}" class="page-btn">{{ p }}</a>
+            {% elif p == page - 3 or p == page + 3 %}
+            <span class="page-dots">...</span>
+            {% endif %}
+        {% endfor %}
+
+        {% if page < total_pages %}
+        <a href="{{ url_for('view_students', page=page+1, sort=sort_by, order=order, grade=filter_grade, course=filter_course) }}" class="page-btn">Next <i class="fas fa-chevron-right"></i></a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+        <h2>No Students Found</h2>
+        <p>
+            {% if filter_grade or filter_course %}
+                No students match the current filter. <a href="{{ url_for('view_students') }}" style="color:var(--accent-primary);">Clear filters</a>
+            {% else %}
+                No students have been added yet. Click the button to add a new student.
+            {% endif %}
+        </p>
+        {% if not filter_grade and not filter_course %}
+        <a href="{{ url_for('add_student') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Student</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

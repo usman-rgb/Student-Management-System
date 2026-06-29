@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Add Student{% endblock %}
+{% block meta_desc %}Add a new student to the Student Management System.{% endblock %}
+{% block page_title %}Add New Student{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('view_students') }}" class="btn btn-outline btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+{% endblock %}
+
+{% block content %}
+<section class="form-container">
+    <form action="{{ url_for('add_student') }}" method="POST" class="student-form" id="addStudentForm" enctype="multipart/form-data">
+        <!-- Personal Information -->
+        <div class="form-section">
+            <h2 class="form-section-title"><i class="fas fa-user"></i> Personal Information</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="name"><i class="fas fa-user"></i> Full Name <span class="required">*</span></label>
+                    <input type="text" id="name" name="name" placeholder="e.g. Ahmed Ali" required>
+                </div>
+                <div class="form-group">
+                    <label for="roll_no"><i class="fas fa-id-badge"></i> Roll Number <span class="required">*</span></label>
+                    <input type="text" id="roll_no" name="roll_no" placeholder="e.g. CS-2026-001" required>
+                </div>
+                <div class="form-group">
+                    <label for="email"><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" id="email" name="email" placeholder="e.g. ahmed@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="phone"><i class="fas fa-phone"></i> Phone Number</label>
+                    <input type="text" id="phone" name="phone" placeholder="e.g. 0300-1234567">
+                </div>
+                <div class="form-group">
+                    <label for="gender"><i class="fas fa-venus-mars"></i> Gender</label>
+                    <select id="gender" name="gender">
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="course"><i class="fas fa-book"></i> Course / Class</label>
+                    <input type="text" id="course" name="course" placeholder="e.g. BSc Computer Science">
+                </div>
+                <div class="form-group form-group-full">
+                    <label for="address"><i class="fas fa-map-marker-alt"></i> Address</label>
+                    <textarea id="address" name="address" rows="2" placeholder="e.g. House 123, Street 4, Lahore" style="resize:vertical;"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Photo Upload -->
+        <div class="form-section">
+            <h2 class="form-section-title"><i class="fas fa-camera"></i> Student Photo</h2>
+            <div class="photo-upload-wrapper">
+                <div class="photo-preview" id="photoPreview">
+                    <i class="fas fa-user-circle"></i>
+                    <span>No photo selected</span>
+                </div>
+                <div class="photo-upload-controls">
+                    <label for="photo" class="btn btn-outline btn-sm" style="cursor:pointer;">
+                        <i class="fas fa-upload"></i> Choose Photo
+                    </label>
+                    <input type="file" id="photo" name="photo" accept="image/png,image/jpeg,image/gif" style="display:none;" onchange="previewPhoto(this)">
+                    <p class="photo-hint">Max 2MB • JPG, PNG, GIF only</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subject Marks (Dynamic) -->
+        <div class="form-section">
+            <h2 class="form-section-title"><i class="fas fa-clipboard-list"></i> Subject Marks (0 - 100)</h2>
+
+            <div class="marks-preview" id="marksPreview">
+                <div class="preview-item">
+                    <span class="preview-label">Total:</span>
+                    <span class="preview-value" id="previewTotal">0 / {{ subjects|length * 100 }}</span>
+                </div>
+                <div class="preview-item">
+                    <span class="preview-label">Average:</span>
+                    <span class="preview-value" id="previewAvg">0%</span>
+                </div>
+                <div class="preview-item">
+                    <span class="preview-label">Grade:</span>
+                    <span class="preview-value grade-badge" id="previewGrade">F</span>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                {% for subj in subjects %}
+                <div class="form-group">
+                    <label for="{{ subj.key }}"><i class="fas {{ subj.icon }}"></i> {{ subj.name }}</label>
+                    <input type="number" id="{{ subj.key }}" name="{{ subj.key }}" min="0" max="100" value="0" step="0.1" class="marks-input">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="reset" class="btn btn-outline" onclick="resetPreview()"><i class="fas fa-redo"></i> Reset</button>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Student</button>
+        </div>
+    </form>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const totalSubjects = {{ subjects|length }};
+function updatePreview() {
+    const inputs = document.querySelectorAll('.marks-input');
+    let total = 0;
+    inputs.forEach(input => { total += parseFloat(input.value) || 0; });
+    const avg = inputs.length > 0 ? total / inputs.length : 0;
+    let grade = 'F', gradeClass = 'grade-f';
+    if (avg >= 90) { grade = 'A+'; gradeClass = 'grade-aplus'; }
+    else if (avg >= 80) { grade = 'A'; gradeClass = 'grade-a'; }
+    else if (avg >= 70) { grade = 'B+'; gradeClass = 'grade-bplus'; }
+    else if (avg >= 60) { grade = 'B'; gradeClass = 'grade-b'; }
+    else if (avg >= 50) { grade = 'C'; gradeClass = 'grade-c'; }
+    else if (avg >= 40) { grade = 'D'; gradeClass = 'grade-d'; }
+    document.getElementById('previewTotal').textContent = total.toFixed(1) + ' / ' + (totalSubjects * 100);
+    document.getElementById('previewAvg').textContent = avg.toFixed(1) + '%';
+    const gradeEl = document.getElementById('previewGrade');
+    gradeEl.textContent = grade;
+    gradeEl.className = 'preview-value grade-badge ' + gradeClass;
+}
+function resetPreview() { setTimeout(updatePreview, 50); }
+document.querySelectorAll('.marks-input').forEach(input => input.addEventListener('input', updatePreview));
+
+function previewPhoto(input) {
+    const preview = document.getElementById('photoPreview');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = '<img src="' + e.target.result + '" alt="Preview">';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
+{% endblock %}

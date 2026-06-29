@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}{{ student.name }} - Profile{% endblock %}
+{% block meta_desc %}Student profile for {{ student.name }}.{% endblock %}
+{% block page_title %}Student Profile{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('report_card', student_id=student.id) }}" class="btn btn-outline btn-sm"><i class="fas fa-file-pdf"></i> Download PDF</a>
+<a href="{{ url_for('update_student', student_id=student.id) }}" class="btn btn-primary btn-sm"><i class="fas fa-pen"></i> Edit</a>
+<a href="{{ url_for('view_students') }}" class="btn btn-outline btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+{% endblock %}
+
+{% block content %}
+<!-- Profile Header -->
+<section class="profile-header">
+    <div class="profile-avatar-section">
+        {% if student.photo %}
+        <img src="{{ url_for('static', filename='uploads/' + student.photo) }}" class="profile-avatar" alt="{{ student.name }}" style="object-fit:cover;">
+        {% else %}
+        <div class="profile-avatar">{{ student.name[0] | upper }}</div>
+        {% endif %}
+        <div class="profile-basic">
+            <h2>{{ student.name }}</h2>
+            <p class="profile-roll">{{ student.roll_no }}</p>
+            {% if student.course %}<span class="badge badge-info">{{ student.course }}</span>{% endif %}
+            {% if student.gender %}<span class="badge badge-secondary">{{ student.gender }}</span>{% endif %}
+        </div>
+    </div>
+    <div class="profile-grade-section">
+        <div class="profile-grade-circle {{ student.grade_color }}">
+            <span class="grade-letter">{{ student.grade }}</span>
+            <span class="grade-label">Grade</span>
+        </div>
+        <div class="profile-rank"><i class="fas fa-medal"></i><span>Rank #{{ rank }} of {{ total_students }}</span></div>
+    </div>
+</section>
+
+<!-- Photo Upload (if no photo) -->
+{% if not student.photo %}
+<section class="profile-remark">
+    <form action="{{ url_for('upload_photo', student_id=student.id) }}" method="POST" enctype="multipart/form-data" class="inline-upload-form">
+        <label for="profile_photo" class="btn btn-outline btn-sm" style="cursor:pointer;"><i class="fas fa-camera"></i> Upload Photo</label>
+        <input type="file" id="profile_photo" name="photo" accept="image/png,image/jpeg,image/gif" style="display:none;" onchange="this.form.submit()">
+    </form>
+</section>
+{% endif %}
+
+<!-- Stats Row -->
+<section class="profile-stats-row">
+    <div class="profile-stat-card">
+        <div class="profile-stat-icon" style="background:var(--stat-total);"><i class="fas fa-percentage"></i></div>
+        <div><h4>{{ student.average }}%</h4><p>Average</p></div>
+    </div>
+    <div class="profile-stat-card">
+        <div class="profile-stat-icon" style="background:var(--stat-avg);"><i class="fas fa-calculator"></i></div>
+        <div><h4>{{ student.total }} / {{ subjects|length * 100 }}</h4><p>Total Marks</p></div>
+    </div>
+    <div class="profile-stat-card">
+        <div class="profile-stat-icon" style="background:var(--stat-pass);"><i class="fas fa-arrow-up"></i></div>
+        <div><h4>{{ get_subject_name(strongest) }}</h4><p>Strongest Subject</p></div>
+    </div>
+    <div class="profile-stat-card">
+        <div class="profile-stat-icon" style="background:var(--stat-fail);"><i class="fas fa-arrow-down"></i></div>
+        <div><h4>{{ get_subject_name(weakest) }}</h4><p>Weakest Subject</p></div>
+    </div>
+</section>
+
+<!-- Remark -->
+<section class="profile-remark">
+    <div class="remark-card"><i class="fas fa-comment-dots"></i><span>{{ student.remark }}</span></div>
+</section>
+
+<!-- Attendance Summary -->
+<section class="profile-stats-row">
+    <div class="profile-stat-card">
+        <div class="profile-stat-icon" style="background:linear-gradient(135deg,#2ecc71,#27ae60);"><i class="fas fa-check"></i></div>
+        <div><h4>{{ attendance.present }}</h4><p>Days Present</p></div>
+    </div>
+    <div class="profile-stat-card">
+        <div class="profile-stat-icon" style="background:linear-gradient(135deg,#e74c3c,#c0392b);"><i class="fas fa-times"></i></div>
+        <div><h4>{{ attendance.absent }}</h4><p>Days Absent</p></div>
+    </div>
+    <div class="profile-stat-card">
+        <div class="profile-stat-icon" style="background:linear-gradient(135deg,#f39c12,#e67e22);"><i class="fas fa-clock"></i></div>
+        <div><h4>{{ attendance.late }}</h4><p>Days Late</p></div>
+    </div>
+    <div class="profile-stat-card">
+        <div class="profile-stat-icon" style="background:linear-gradient(135deg,#3498db,#2980b9);"><i class="fas fa-chart-line"></i></div>
+        <div><h4>{{ attendance.percentage }}%</h4><p>Attendance Rate</p></div>
+    </div>
+</section>
+
+<!-- Subject Details & Chart -->
+<div class="profile-content-grid">
+    <section class="profile-section">
+        <h3 class="section-title"><i class="fas fa-clipboard-list"></i> Subject-wise Marks</h3>
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead><tr><th>Subject</th><th>Marks</th><th>Status</th><th>Progress</th></tr></thead>
+                <tbody>
+                    {% for subj in subjects %}
+                    {% set mark = student.marks.get(subj.key, 0) %}
+                    <tr>
+                        <td><strong><i class="fas {{ subj.icon }}"></i> {{ subj.name }}</strong></td>
+                        <td><strong>{{ mark }}</strong> / 100</td>
+                        <td>
+                            {% if mark >= 40 %}<span class="badge badge-pass"><i class="fas fa-check"></i> Pass</span>
+                            {% else %}<span class="badge badge-fail"><i class="fas fa-times"></i> Fail</span>{% endif %}
+                        </td>
+                        <td>
+                            <div class="progress-bar-wrapper">
+                                <div class="progress-bar {% if mark >= 80 %}progress-excellent{% elif mark >= 60 %}progress-good{% elif mark >= 40 %}progress-average{% else %}progress-poor{% endif %}" style="width:{{ mark }}%"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <section class="profile-section">
+        <h3 class="section-title"><i class="fas fa-chart-area"></i> Performance Chart</h3>
+        <div class="chart-wrapper" style="height:320px;"><canvas id="profileRadar"></canvas></div>
+    </section>
+</div>
+
+<!-- Contact Info -->
+<section class="profile-section" style="margin:20px 32px 0;">
+    <h3 class="section-title"><i class="fas fa-address-card"></i> Contact Information</h3>
+    <div class="contact-grid">
+        <div class="contact-item"><i class="fas fa-envelope"></i><div><label>Email</label><p>{{ student.email or 'Not provided' }}</p></div></div>
+        <div class="contact-item"><i class="fas fa-phone"></i><div><label>Phone</label><p>{{ student.phone or 'Not provided' }}</p></div></div>
+        <div class="contact-item"><i class="fas fa-map-marker-alt"></i><div><label>Address</label><p>{{ student.address or 'Not provided' }}</p></div></div>
+        <div class="contact-item"><i class="fas fa-calendar-plus"></i><div><label>Date Added</label><p>{{ student.date_added or 'N/A' }}</p></div></div>
+    </div>
+</section>
+
+<!-- Actions -->
+<section class="profile-actions">
+    <a href="{{ url_for('update_student', student_id=student.id) }}" class="btn btn-primary"><i class="fas fa-pen"></i> Edit Student</a>
+    <a href="{{ url_for('report_card', student_id=student.id) }}" class="btn btn-outline"><i class="fas fa-file-pdf"></i> Download Report Card</a>
+    <button class="btn btn-outline" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+    <a href="{{ url_for('delete_student', student_id=student.id) }}" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete &quot;{{ student.name }}&quot;?')"><i class="fas fa-trash"></i> Delete</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const labels = [{% for subj in subjects %}'{{ subj.name }}'{% if not loop.last %},{% endif %}{% endfor %}];
+    const data = [{% for subj in subjects %}{{ student.marks.get(subj.key, 0) }}{% if not loop.last %},{% endif %}{% endfor %}];
+    new Chart(document.getElementById('profileRadar').getContext('2d'), {
+        type: 'radar',
+        data: { labels: labels, datasets: [{ label: '{{ student.name }}', data: data, backgroundColor: 'rgba(108,99,255,0.2)', borderColor: 'rgba(108,99,255,0.8)', pointBackgroundColor: 'rgba(108,99,255,1)', pointBorderColor: '#fff', borderWidth: 2, pointRadius: 5 }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { r: { beginAtZero: true, max: 100, ticks: { stepSize: 20, color: '#a0a0c0', backdropColor: 'transparent' }, grid: { color: 'rgba(255,255,255,0.08)' }, angleLines: { color: 'rgba(255,255,255,0.08)' }, pointLabels: { color: '#e8e8f0', font: { family: 'Inter', size: 13, weight: '600' } } } }, plugins: { legend: { display: false } } }
+    });
+});
+</script>
+{% endblock %}

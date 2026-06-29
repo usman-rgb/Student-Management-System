@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Attendance{% endblock %}
+{% block meta_desc %}Mark daily attendance for students.{% endblock %}
+{% block page_title %}Mark Attendance{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('attendance_report') }}" class="btn btn-outline btn-sm"><i class="fas fa-chart-bar"></i> Report</a>
+{% endblock %}
+
+{% block content %}
+{% if students|length == 0 %}
+<section class="empty-state">
+    <div class="empty-icon"><i class="fas fa-calendar-check"></i></div>
+    <h2>No Students Available</h2>
+    <p>Add students first to mark attendance.</p>
+    <a href="{{ url_for('add_student') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Student</a>
+</section>
+{% else %}
+
+<section class="form-container">
+    <form action="{{ url_for('attendance') }}" method="POST" class="attendance-form">
+        <!-- Date Picker -->
+        <div class="form-section">
+            <h2 class="form-section-title"><i class="fas fa-calendar-alt"></i> Select Date</h2>
+            <div class="date-picker-row">
+                <input type="date" name="date" id="attendanceDate" value="{{ selected_date }}" class="date-input"
+                       onchange="window.location.href='{{ url_for('attendance') }}?date=' + this.value">
+                <span class="date-label" id="dateDisplay"></span>
+            </div>
+        </div>
+
+        <!-- Student List -->
+        <div class="form-section">
+            <h2 class="form-section-title"><i class="fas fa-users"></i> Students ({{ students|length }})</h2>
+
+            <!-- Quick Actions -->
+            <div class="attendance-quick-actions">
+                <button type="button" class="btn btn-sm btn-outline" onclick="setAllStatus('Present')"><i class="fas fa-check-double"></i> Mark All Present</button>
+                <button type="button" class="btn btn-sm btn-outline" onclick="setAllStatus('Absent')"><i class="fas fa-times"></i> Mark All Absent</button>
+            </div>
+
+            <div class="attendance-list">
+                {% for student in students %}
+                <div class="attendance-row">
+                    <div class="attendance-student">
+                        {% if student.photo %}
+                        <img src="{{ url_for('static', filename='uploads/' + student.photo) }}" class="table-photo" alt="{{ student.name }}">
+                        {% else %}
+                        <div class="avatar">{{ student.name[0] | upper }}</div>
+                        {% endif %}
+                        <div>
+                            <strong>{{ student.name }}</strong>
+                            <small>{{ student.roll_no }} • {{ student.course or 'N/A' }}</small>
+                        </div>
+                    </div>
+                    <div class="attendance-options" data-student-id="{{ student.id }}">
+                        <label class="att-radio att-present">
+                            <input type="radio" name="status_{{ student.id }}" value="Present"
+                                   {% if existing.get(student.id) == 'Present' %}checked{% endif %}>
+                            <span><i class="fas fa-check"></i> Present</span>
+                        </label>
+                        <label class="att-radio att-absent">
+                            <input type="radio" name="status_{{ student.id }}" value="Absent"
+                                   {% if existing.get(student.id) == 'Absent' or not existing.get(student.id) %}checked{% endif %}>
+                            <span><i class="fas fa-times"></i> Absent</span>
+                        </label>
+                        <label class="att-radio att-late">
+                            <input type="radio" name="status_{{ student.id }}" value="Late"
+                                   {% if existing.get(student.id) == 'Late' %}checked{% endif %}>
+                            <span><i class="fas fa-clock"></i> Late</span>
+                        </label>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Attendance</button>
+        </div>
+    </form>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Display formatted date
+const dateInput = document.getElementById('attendanceDate');
+if (dateInput) {
+    const dateDisplay = document.getElementById('dateDisplay');
+    const updateDateDisplay = () => {
+        const d = new Date(dateInput.value + 'T00:00:00');
+        dateDisplay.textContent = d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    };
+    updateDateDisplay();
+    dateInput.addEventListener('change', updateDateDisplay);
+}
+
+function setAllStatus(status) {
+    document.querySelectorAll(`.att-radio input[value="${status}"]`).forEach(r => r.checked = true);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Attendance Report{% endblock %}
+{% block meta_desc %}Attendance report for all students.{% endblock %}
+{% block page_title %}Attendance Report{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('attendance') }}" class="btn btn-primary btn-sm"><i class="fas fa-calendar-check"></i> Mark Attendance</a>
+{% endblock %}
+
+{% block content %}
+{% if total_students == 0 %}
+<section class="empty-state">
+    <div class="empty-icon"><i class="fas fa-chart-bar"></i></div>
+    <h2>No Data Available</h2>
+    <p>Add students and mark attendance to see reports.</p>
+</section>
+{% else %}
+
+<!-- Overview Stats -->
+<section class="analytics-overview">
+    <div class="analytics-stat">
+        <div class="analytics-stat-icon" style="background:var(--stat-total);"><i class="fas fa-users"></i></div>
+        <div><h3>{{ total_students }}</h3><p>Total Students</p></div>
+    </div>
+    <div class="analytics-stat">
+        <div class="analytics-stat-icon" style="background:var(--stat-avg);"><i class="fas fa-calendar"></i></div>
+        <div><h3>{{ dates|length }}</h3><p>Days Recorded</p></div>
+    </div>
+</section>
+
+<!-- Per-Student Attendance Table -->
+<section class="analytics-section">
+    <h2 class="section-title"><i class="fas fa-users"></i> Student Attendance Summary</h2>
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Student</th>
+                    <th>Roll No</th>
+                    <th>Present</th>
+                    <th>Absent</th>
+                    <th>Late</th>
+                    <th>Total Days</th>
+                    <th>Attendance %</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in student_attendance %}
+                {% set s = item.student %}
+                {% set att = item.attendance %}
+                <tr class="table-row-animate">
+                    <td>{{ loop.index }}</td>
+                    <td>
+                        <a href="{{ url_for('student_profile', student_id=s.id) }}" class="student-name-cell" style="text-decoration:none;color:inherit;">
+                            {% if s.photo %}<img src="{{ url_for('static', filename='uploads/' + s.photo) }}" class="table-photo" alt="">
+                            {% else %}<div class="avatar">{{ s.name[0] | upper }}</div>{% endif %}
+                            <strong>{{ s.name }}</strong>
+                        </a>
+                    </td>
+                    <td><span class="badge badge-info">{{ s.roll_no }}</span></td>
+                    <td><span style="color:#2ecc71;font-weight:700;">{{ att.present }}</span></td>
+                    <td><span style="color:#e74c3c;font-weight:700;">{{ att.absent }}</span></td>
+                    <td><span style="color:#f39c12;font-weight:700;">{{ att.late }}</span></td>
+                    <td>{{ att.total }}</td>
+                    <td>
+                        <div class="progress-bar-wrapper" style="display:inline-flex;width:80px;margin-right:8px;vertical-align:middle;">
+                            <div class="progress-bar {% if att.percentage >= 75 %}progress-excellent{% elif att.percentage >= 50 %}progress-good{% else %}progress-poor{% endif %}" style="width:{{ att.percentage }}%"></div>
+                        </div>
+                        <strong>{{ att.percentage }}%</strong>
+                    </td>
+                    <td>
+                        {% if att.percentage >= 75 %}<span class="badge badge-pass"><i class="fas fa-check"></i> Good</span>
+                        {% elif att.percentage >= 50 %}<span class="badge" style="background:rgba(243,156,18,0.15);color:#f39c12;"><i class="fas fa-exclamation"></i> Warning</span>
+                        {% elif att.total > 0 %}<span class="badge badge-fail"><i class="fas fa-times"></i> Critical</span>
+                        {% else %}<span class="badge" style="background:rgba(160,160,192,0.15);color:var(--text-muted);">No Data</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Dates List -->
+{% if dates %}
+<section class="analytics-section">
+    <h2 class="section-title"><i class="fas fa-calendar-alt"></i> Attendance Dates</h2>
+    <div class="date-tags">
+        {% for date in dates %}
+        <a href="{{ url_for('attendance', date=date) }}" class="date-tag"><i class="fas fa-calendar-day"></i> {{ date }}</a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% endif %}
+{% endblock %}
